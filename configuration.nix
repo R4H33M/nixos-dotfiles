@@ -27,7 +27,7 @@
   # nix.settings.experimental-features = [ "nix-command" "flakes" ];
 
   # Set your time zone.
-  time.timeZone = "America/Los_Angeles";
+  time.timeZone = "America/New_York";
 
   # Select internationalisation properties.
   i18n.defaultLocale = "en_US.UTF-8";
@@ -53,6 +53,7 @@
   services.xserver.xkb = {
     layout = "us";
     variant = "";
+    options = "caps:numlock"; #somethings weird with this that is persisting
   };
 
   hardware.bluetooth = {
@@ -62,6 +63,9 @@
 
   fonts.packages = with pkgs; [
     nerd-fonts.fira-code
+    ipafont
+    kochi-substitute
+    noto-fonts-cjk-sans
   ];
 
   # Hardware specific - set backlight kernel
@@ -75,13 +79,23 @@
     vimAlias = true;
   };
 
+  i18n.inputMethod = {
+    enable = true;
+    type = "fcitx5";
+    fcitx5.addons = with pkgs; [ 
+      # fcitx5-mozc
+      fcitx5-mozc-ut
+      fcitx5-gtk 
+    ];
+  };
+
   # Define a user account. Don't forget to set a password with ‘passwd’.
   users.users.xygzy = {
     isNormalUser = true;
     description = "xygzy";
     extraGroups = [ "networkmanager" "wheel" ];
     packages = with pkgs; [ 
-      chromium
+      (chromium.override { enableWideVine = true; })
       kitty
       git
       git-lfs # Work specific
@@ -94,6 +108,8 @@
       rofi
       rofimoji
       pyright
+      clang
+      clang-tools
       starship
     ];
   };
