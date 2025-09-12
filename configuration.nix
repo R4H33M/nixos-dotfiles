@@ -13,6 +13,8 @@
   # Bootloader.
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
+  
+  boot.extraModulePackages = [ config.boot.kernelPackages.rtl8852bu ];
 
   networking.hostName = "cennestre"; # Define your hostname.
   # networking.wireless.enable = true;  # Enables wireless support via wpa_supplicant.
@@ -68,6 +70,8 @@
     noto-fonts-cjk-sans
   ];
 
+  services.printing.enable = true;
+
   # Hardware specific - set backlight kernel
   services.udev.extraRules = ''
     ACTION=="add", SUBSYSTEM=="backlight", KERNEL=="intel_backlight", MODE="0666", RUN+="${pkgs.coreutils}/bin/chmod a+w /sys/class/backlight/%k/brightness"
@@ -93,7 +97,7 @@
   users.users.xygzy = {
     isNormalUser = true;
     description = "xygzy";
-    extraGroups = [ "networkmanager" "wheel" ];
+    extraGroups = [ "networkmanager" "wheel" "dialout" ];
     packages = with pkgs; [ 
       (chromium.override { enableWideVine = true; })
       kitty
@@ -111,6 +115,9 @@
       clang
       clang-tools
       starship
+      anki-bin
+      mpv
+      fzf
     ];
   };
 
