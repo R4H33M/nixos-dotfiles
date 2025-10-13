@@ -14,7 +14,17 @@
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
   
-  boot.extraModulePackages = [ config.boot.kernelPackages.rtl8852bu ];
+  # G16 specific
+  boot.kernelParams = [
+    "i915.enable_dpcd_backlight=1" 
+    "nvidia.NVreg_EnableBacklightHandler=0"
+    "nvidia.NVreg_RegistryDwords=EnableBrightnessControl=0"
+  ];
+  
+  # G16 specific
+  boot.initrd.prepend = [ "${import ./gu605c-spi-cs-gpio { inherit pkgs; }}/asus-gu605c-acpi.cpio" ];
+
+  boot.kernelPackages = pkgs.linuxPackages_latest;
 
   networking.hostName = "cennestre"; # Define your hostname.
   # networking.wireless.enable = true;  # Enables wireless support via wpa_supplicant.
@@ -122,9 +132,6 @@
   };
 
   programs.starship.enable = true;
-
-  # Work specific
-  services.tailscale.enable = true;
 
   # Allow unfree packages
   nixpkgs.config.allowUnfree = true;
