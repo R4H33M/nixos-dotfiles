@@ -121,7 +121,9 @@ keys = [
     ),
     Key([], "XF86AudioLowerVolume", lazy.spawn("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"), desc="Lower Volume by 5%"),
     Key([], "XF86AudioRaiseVolume", lazy.spawn("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+"), desc="Raise Volume by 5%"),
-    Key([], "XF86AudioMute", lazy.spawn("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"), desc="Mute/Unmute Volume")
+    Key([], "XF86AudioMute", lazy.spawn("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"), desc="Mute/Unmute Volume"),
+    Key([], "XF86KbdBrightnessUp", lazy.spawn("asusctl -n"), desc="Increase kbd brightness"),
+    Key([], "XF86KbdBrightnessDown", lazy.spawn("asusctl -p"), desc="Reduce kbd brightness")
 ]
 
 # Add key bindings to switch VTs in Wayland.
@@ -214,6 +216,7 @@ screens = [
                     },
                     name_transform=lambda name: name.upper(),
                 ),
+                widget.Notify(),
                 widget.Backlight(fmt="B: {}", backlight_name="intel_backlight", change_command = None, step=5),
                 widget.PulseVolume(fmt="V: {}", get_volume_command="wpctl get-volume @DEFAULT_AUDIO_SINK@", get_mute_command="wpctl get-mute @DEFAULT_AUDIO_SINK@"),
                 widget.Battery(),
