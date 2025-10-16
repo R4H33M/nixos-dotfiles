@@ -128,26 +128,33 @@
     isNormalUser = true;
     description = "xygzy";
     extraGroups = [ "networkmanager" "wheel" "dialout" ];
-    packages = with pkgs; [ 
+    packages = with pkgs; [
+
+      # Core
       (chromium.override { enableWideVine = true; })
       kitty
       git
-      git-lfs # Work specific
       networkmanagerapplet
       blueman
       flameshot
       obsidian
-      unzip
-      signal-desktop
       rofi
       rofimoji
+
+      # Core Tools
+      unzip
+      signal-desktop
+      
+      # Developer Stuff
       pyright
       clang
       clang-tools
       starship
+      fzf
+
+      # Language learning
       anki-bin
       mpv
-      fzf
     ];
   };
 

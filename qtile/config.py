@@ -87,7 +87,7 @@ keys = [
     ),
     Key([mod], "Return", lazy.spawn(terminal), desc="Launch terminal"),
     Key([mod], "c", lazy.spawn("chromium"), desc="Launch chromium"),
-    Key([], "Print", lazy.spawn("flameshot gui"), desc="Launch screenshot"),
+    Key([mod, "shift"], "s", lazy.spawn("flameshot gui"), desc="Launch screenshot"),
     Key([mod], "o", lazy.spawn("obsidian"), desc="Launch obsidian"),
     # Toggle between different layouts as defined below
     # Key([mod], "Tab", lazy.layout.next(), desc="Toggle between layouts"),
