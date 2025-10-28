@@ -2,7 +2,7 @@
 # your system.  Help is available in the configuration.nix(5) man page
 # and in the NixOS manual (accessible by running ‘nixos-help’).
 
-{ config, pkgs, ... }:
+{ config, pkgs, lib, ... }:
 
 {
   imports =
@@ -11,9 +11,38 @@
     ];
 
   # Bootloader.
-  boot.loader.systemd-boot.enable = true;
+  boot.loader.systemd-boot.enable = false;
+  boot.loader.grub.enable = true;
+  boot.loader.grub.useOSProber = true;
+  boot.loader.grub.efiSupport = true;
   boot.loader.efi.canTouchEfiVariables = true;
-  
+  boot.loader.grub.device = "nodev";
+
+  boot.loader.grub.theme = pkgs.stdenv.mkDerivation {
+    pname = "fallout-grub-theme";
+    version = "3.1";
+    src = pkgs.fetchFromGitHub {
+      owner = "shvchk";
+      repo = "fallout-grub-theme";
+      rev = "2c51d28";
+      hash = "sha256-iQU1Rv7Q0BFdsIX9c7mxDhhYaWemuaNRYs+sR1DF0Rc=";
+    };
+    installPhase = "cp -r . $out";
+  };
+
+  # Old Systemd boot
+  # boot.loader.systemd-boot.enable = true;
+  # boot.loader.efi.canTouchEfiVariables = true;
+
+  # Enable debugfs for iwlwifi
+  boot.kernelPatches = [ {
+    name = "iwlwifi-config";
+    patch = null;
+    structuredExtraConfig = {
+      IWLWIFI_DEBUGFS = lib.kernel.yes;
+    };
+  } ];
+
   # G16 specific
   boot.kernelParams = [
     "i915.enable_dpcd_backlight=1" 
@@ -50,6 +79,9 @@
   boot.blacklistedKernelModules = [ "nouveau" "nvidia" "nvidia_drm" "nvidia_modeset" ];
 
   boot.kernelPackages = pkgs.linuxPackages_latest;
+
+  # Prevent trackpad from moving while typing
+  services.libinput.touchpad.disableWhileTyping = true;
 
   networking.hostName = "cennestre"; # Define your hostname.
   # networking.wireless.enable = true;  # Enables wireless support via wpa_supplicant.
@@ -140,6 +172,7 @@
       obsidian
       rofi
       rofimoji
+      mate.caja
 
       # Core Tools
       unzip
@@ -155,10 +188,16 @@
       # Language learning
       anki-bin
       mpv
+
+      # Hacking
+      qFlipper
     ];
   };
 
   programs.starship.enable = true;
+  services.gvfs.enable = true;
+  services.udisks2.enable = true;
+  hardware.flipperzero.enable = true; # since we are doing a user install?
 
   # Allow unfree packages
   nixpkgs.config.allowUnfree = true;
