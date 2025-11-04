@@ -176,6 +176,8 @@
 
       # Core Tools
       unzip
+
+      # Communication
       signal-desktop
       
       # Developer Stuff
@@ -184,6 +186,11 @@
       clang-tools
       starship
       fzf
+      (vscode-with-extensions.override {
+        vscodeExtensions = with vscode-extensions; [
+          james-yu.latex-workshop
+        ];
+      })
 
       # Language learning
       anki-bin
@@ -191,6 +198,10 @@
 
       # Hacking
       qFlipper
+      wireshark
+
+      # Misc
+      texliveFull
     ];
   };
 
