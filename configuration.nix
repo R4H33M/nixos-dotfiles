@@ -4,11 +4,24 @@
 
 { config, pkgs, lib, ... }:
 
+let
+  # Add the local background.png to the Nix store
+  greeter_wallpaper = pkgs.runCommand "greeter_wallpaper" { } ''
+    cp ${./greeter_wallpaper.png} $out
+  '';
+  
+  # This is manually copied into my home directory for the plugin
+  cshargextcap = pkgs.callPackage ./cshargextcap.nix { };
+in
 {
   imports =
     [ # Include the results of the hardware scan.
       ./hardware-configuration.nix # Use absolute path so you use automatically generated version
     ];
+  
+  # Needed for python dynamic libraries
+  # Use export LD_LIBRARY_PATH=$NIX_LD_LIBRARY_PATH
+  programs.nix-ld.enable = true;
 
   # Bootloader.
   boot.loader.systemd-boot.enable = false;
@@ -35,33 +48,56 @@
   # boot.loader.efi.canTouchEfiVariables = true;
 
   # Enable debugfs for iwlwifi
-  boot.kernelPatches = [ {
-    name = "iwlwifi-config";
-    patch = null;
-    structuredExtraConfig = {
-      IWLWIFI_DEBUGFS = lib.kernel.yes;
-    };
-  } ];
+  # boot.kernelPatches = [ {
+  #   name = "iwlwifi-config";
+  #   patch = null;
+  #   structuredExtraConfig = {
+  #     IWLWIFI_DEBUGFS = lib.kernel.yes;
+  #   };
+  # } ];
 
   # G16 specific
   boot.kernelParams = [
     "i915.enable_dpcd_backlight=1" 
     "nvidia.NVreg_EnableBacklightHandler=0"
     "nvidia.NVreg_RegistryDwords=EnableBrightnessControl=0"
+    "nvme_core.default_ps_max_latency_us=0"
   ];
   
   # G16 specific
   boot.initrd.prepend = [ "${import ./gu605c-spi-cs-gpio { inherit pkgs; }}/asus-gu605c-acpi.cpio" ];
 
-  # G16 specific - ensure no integrated GPU stuff
+  # G16 specific - ensure no discrete GPU stuff
   boot.extraModprobeConfig = ''
     blacklist nouveau
     options nouveau modeset=0
   '';
 
+  services.xserver.videoDrivers = [ "modesetting" ];
+
+  hardware.graphics = {
+    enable = true;
+    extraPackages = with pkgs; [
+      # Required for modern Intel GPUs (Xe iGPU and ARC)
+      intel-media-driver     # VA-API (iHD) userspace
+      vpl-gpu-rt             # oneVPL (QSV) runtime
+
+      # Optional (compute / tooling):
+      intel-compute-runtime  # OpenCL (NEO) + Level Zero for Arc/Xe
+      # NOTE: 'intel-ocl' also exists as a legacy package; not recommended for Arc/Xe.
+      # libvdpau-va-gl       # Only if you must run VDPAU-only apps
+    ];
+  };
+
+  environment.sessionVariables = {
+    LIBVA_DRIVER_NAME = "iHD";     # Prefer the modern iHD backend
+    # VDPAU_DRIVER = "va_gl";      # Only if using libvdpau-va-gl
+  };
+
   # G16 specific
   services.asusd.enable = true;
   services.asusd.enableUserService = true;
+  services.supergfxd.enable = false;
   
   services.udev.extraRules = ''
   # Remove NVIDIA USB xHCI Host Controller devices, if present
@@ -73,7 +109,7 @@
   # Remove NVIDIA VGA/3D controller devices
   ACTION=="add", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x03[0-9]*", ATTR{power/control}="auto", ATTR{remove}="1"
   # Allow brightness to be changed without root
-  ACTION=="add", SUBSYSTEM=="backlight", KERNEL=="intel_backlight", MODE="0666", RUN+="${pkgs.coreutils}/bin/chmod a+w /sys/class/backlight/%k/brightness"
+  ACTION=="add", SUBSYSTEM=="backlight", KERNEL=="intel_backlight", MODE="0666", RUN+="${pkgs.coreutils}/bin/chmod a+rw /sys/class/backlight/%k/brightness"
   '';
 
   boot.blacklistedKernelModules = [ "nouveau" "nvidia" "nvidia_drm" "nvidia_modeset" ];
@@ -92,11 +128,20 @@
 
   # Enable networking
   networking.networkmanager.enable = true;
+  networking.useNetworkd = true;
+  networking.dhcpcd.enable = false;
 
-  # nix.settings.experimental-features = [ "nix-command" "flakes" ];
+  xdg.portal = {
+    enable = true;
+    extraPortals = [ pkgs.xdg-desktop-portal-gtk ];
+    config.common.default = [ "gtk" ];
+  };
+
+  nix.settings.experimental-features = [ "nix-command" "flakes" ];
+  nix.settings.trusted-users = [ "root" "xygzy" ];
 
   # Set your time zone.
-  time.timeZone = "America/New_York";
+  time.timeZone = lib.mkDefault "America/New_York";
 
   # Select internationalisation properties.
   i18n.defaultLocale = "en_US.UTF-8";
@@ -118,13 +163,64 @@
     windowManager.qtile.enable = true;
   };
 
+  services.gnome.gnome-keyring.enable = true;
+
+  programs.sway.enable = true;
+  services.displayManager.ly.enable = true;
+  services.displayManager.ly.settings = {
+    animation = "matrix";
+    clear_password = "true";
+    default_input = "password";
+    brightness_up_cmd = "${pkgs.brightnessctl}/bin/brightnessctl -q -n s +10%";
+    brightness_down_cmd = "${pkgs.brightnessctl}/bin/brightnessctl -q -n s 10%-";
+  };
+
+  services.journald.extraConfig = "SystemMaxUse=1G";
+  services.dbus.implementation = "broker";
+
   # Configure keymap in X11
   services.xserver.xkb = {
     layout = "us";
     variant = "";
-    options = "caps:numlock"; #somethings weird with this that is persisting
+    options = "caps:numlock,lv3:ralt_switch"; #somethings weird with this that is persisting
+    extraLayouts.us-no= {
+      description = "US layout with Custom Norwegian Shortcuts";
+      languages = [ "eng" ];
+      symbolsFile = pkgs.writeText "us-no" ''
+        xkb_symbols "us-no" {
+          include "us(basic)"
+
+          name[Group1]= "US layout with Custom Norwegian Shortcuts";
+
+          // Syntax: [ Level1, Level2, Level3, Level4 ]
+          // Level1: Normal
+          // Level2: Shift
+          // Level3: AltGr (Your existing switch)
+          // Level4: AltGr + Shift
+
+          // Map AltGr+A to å / Å
+          key <AC01> { [	   a,          A,        aring,           Aring] };
+
+          // Map AltGr+O to ø / Ø
+          key <AD09> { [         o,          O,        oslash,          Ooblique] };
+
+          // Map AltGr+E to æ / Æ
+          key <AD03> { [	   e,          E,        ae,           AE] };
+          
+          include "level3(ralt_switch)"
+        };
+      '';
+    };
   };
 
+  # services.xserver.displayManager.lightdm = {
+  #   enable = true;
+  #   background = greeter_wallpaper;
+  #   greeters.slick.enable = true;
+  # };
+
+  programs.dconf.enable = true;
+  
   hardware.bluetooth = {
     enable = true;
     powerOnBoot = true;
@@ -136,6 +232,18 @@
     kochi-substitute
     noto-fonts-cjk-sans
   ];
+
+  virtualisation.docker = {
+    # Consider disabling the system wide Docker daemon
+    enable = false;
+    rootless = {
+      enable = true;
+      setSocketVariable = true;
+      daemon.settings = {
+        dns = [ "1.1.1.1" "8.8.8.8" ];
+      };
+    };
+  };
 
   services.printing.enable = true;
 
@@ -159,7 +267,7 @@
   users.users.xygzy = {
     isNormalUser = true;
     description = "xygzy";
-    extraGroups = [ "networkmanager" "wheel" "dialout" ];
+    extraGroups = [ "networkmanager" "wheel" "dialout" "wireshark"];
     packages = with pkgs; [
 
       # Core
@@ -173,9 +281,16 @@
       rofi
       rofimoji
       mate.caja
+      xclip # for neovim clipboard support
+      xorg.xauth
+      betterlockscreen
+      starship
+      wget
+      xdotool # for norwregian key shortcuts
 
       # Core Tools
       unzip
+      file
 
       # Communication
       signal-desktop
@@ -184,13 +299,14 @@
       pyright
       clang
       clang-tools
-      starship
       fzf
       (vscode-with-extensions.override {
         vscodeExtensions = with vscode-extensions; [
           james-yu.latex-workshop
         ];
       })
+      uv
+      opam # for COS 320 compilers
 
       # Language learning
       anki-bin
@@ -198,17 +314,65 @@
 
       # Hacking
       qFlipper
-      wireshark
+      burpsuite
+      nmap
+      ghidra-bin
+      checksec
+      binwalk
+      hashcat
+      # Use Frida as a uv package instead
+      # frida-tools
+      # This is 2025.10.20
+      (builtins.getFlake "github:pwndbg/pwndbg/0af61b512c43b13b9c962b1ad5a380f38df4b9aa").packages.${builtins.currentSystem}.default
+      android-tools
+      apktool
+      jadx
+      apksigner
+      sage
 
       # Misc
       texliveFull
+      htop
+      rubyPackages.github-pages
     ];
   };
 
   programs.starship.enable = true;
+
+
+  programs.wireshark.enable = true; 
+  programs.wireshark.package = pkgs.wireshark;
+
+  # Flipper stuff
   services.gvfs.enable = true;
   services.udisks2.enable = true;
   hardware.flipperzero.enable = true; # since we are doing a user install?
+
+  programs.zoxide.enable = true;
+
+  # didn't quite work for some reason
+  # services.automatic-timezoned.enable = true;
+
+  # Doesn't do anything anymore because of the initExtra
+  # programs.zoxide.flags = [
+  #   "--cmd cd"
+  # ];
+  programs.zoxide.enableBashIntegration = false;
+
+  programs.bash = {
+    interactiveShellInit = lib.mkOrder 2000
+    ''
+      eval "$(${lib.getExe pkgs.zoxide} init bash --cmd cd)"    
+    '';
+  };
+
+  services.tailscale.enable = true;
+  
+  # for betterlockscreen 
+  programs.i3lock.enable = true;
+  security.pam.services.i3lock = {};
+  programs.xss-lock.enable = true;
+  programs.xss-lock.lockerCommand = "${pkgs.betterlockscreen}/bin/betterlockscreen -l dim";
 
   # Allow unfree packages
   nixpkgs.config.allowUnfree = true;

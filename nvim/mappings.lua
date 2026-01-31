@@ -5,7 +5,12 @@ map("n", "<C-h>", "<C-w>h", { desc = "switch window left" })
 map("n", "<C-l>", "<C-w>l", { desc = "switch window right" })
 map("n", "<C-j>", "<C-w>j", { desc = "switch window down" })
 map("n", "<C-k>", "<C-w>k", { desc = "switch window up" })
-map("n", "<C-q>", "<C-w>c", { desc = "close window" })
+map("n", "<C-q>", "<cmd>bd<CR>", { desc = "close buffer" })
+map("n", "<C-S>", "<cmd>update<CR>", { desc = "save" })
+
+-- Buffer switching
+map('n', '<A-Tab>', '<cmd>bnext<CR>', { noremap = true, silent = true })
+map('n', '<A-S-Tab>', '<cmd>bprevious<CR>', { noremap = true, silent = true })
 
 -- nvim tree
 

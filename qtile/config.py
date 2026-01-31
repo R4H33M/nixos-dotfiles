@@ -86,8 +86,9 @@ keys = [
         desc="Toggle between split and unsplit sides of stack",
     ),
     Key([mod], "Return", lazy.spawn(terminal), desc="Launch terminal"),
-    Key([mod], "c", lazy.spawn("chromium"), desc="Launch chromium"),
+    Key([mod], "c", lazy.spawn("chromium --disable-features=ExtensionManifestV2Unsupported,ExtensionManifestV2Disabled"), desc="Launch chromium"),
     Key([mod, "shift"], "s", lazy.spawn("flameshot gui"), desc="Launch screenshot"),
+    Key([mod, "control"], "l", lazy.spawn("betterlockscreen -l dim"), desc="Lockscreen"),
     Key([mod], "o", lazy.spawn("obsidian"), desc="Launch obsidian"),
     # Toggle between different layouts as defined below
     # Key([mod], "Tab", lazy.layout.next(), desc="Toggle between layouts"),
@@ -129,51 +130,76 @@ keys = [
 # Add key bindings to switch VTs in Wayland.
 # We can't check qtile.core.name in default config as it is loaded before qtile is started
 # We therefore defer the check until the key binding is run by using .when(func=...)
-for vt in range(1, 8):
-    keys.append(
-        Key(
-            ["control", "mod1"],
-            f"f{vt}",
-            lazy.core.change_vt(vt).when(func=lambda: qtile.core.name == "wayland"),
-            desc=f"Switch to VT{vt}",
-        )
+# for vt in range(1, 8):
+#     keys.append(
+#         Key(
+#             ["control", "mod1"],
+#             f"f{vt}",
+#             lazy.core.change_vt(vt).when(func=lambda: qtile.core.name == "wayland"),
+#             desc=f"Switch to VT{vt}",
+#         )
+#     )
+
+
+# groups = [Group(i, screen_affinity=0) for i in "1234"] + [
+#     Group(i, screen_affinity=1) for i in "5678"
+# ]
+
+
+# def go_to_group(name: str):
+#     def _inner(qtile):
+#         if len(qtile.screens) == 1:
+#             qtile.groups_map[name].toscreen()
+#             return
+#
+#         if name in "1234":
+#             i = qtile.screens.index(qtile.current_screen)
+#             qtile.focus_screen(1)
+#             qtile.groups_map[str(int(name) + 4)].toscreen()
+#             qtile.focus_screen(0)
+#             qtile.groups_map[name].toscreen()
+#             qtile.focus_screen(i)
+#
+#     return _inner
+
+# for i in "1234":
+#     keys.append(Key([mod], i, lazy.function(go_to_group(i))))
+
+groups = [Group(i) for i in "12345678"]
+
+for i in groups:
+    keys.extend(
+        [
+            # mod + group number = switch to group
+            Key(
+                [mod],
+                i.name,
+                lazy.group[i.name].toscreen(),
+                desc=f"Switch to group {i.name}",
+            ),
+            # mod + shift + group number = switch to & move focused window to group
+            Key(
+                [mod, "shift"],
+                i.name,
+                lazy.window.togroup(i.name, switch_group=False),
+                desc=f"Switch to & move focused window to group {i.name}",
+            ),
+            # Or, use below if you prefer not to switch to that group.
+            # # mod + shift + group number = move focused window to group
+            # Key([mod, "shift"], i.name, lazy.window.togroup(i.name),
+            #     desc="move focused window to group {}".format(i.name)),
+        ]
     )
 
-
-groups = [Group(i, screen_affinity=0) for i in "1234"] + [
-    Group(i, screen_affinity=1) for i in "5678"
-]
-
-
-def go_to_group(name: str):
-    def _inner(qtile):
-        if len(qtile.screens) == 1:
-            qtile.groups_map[name].toscreen()
-            return
-
-        if name in "1234":
-            i = qtile.screens.index(qtile.current_screen)
-            qtile.focus_screen(1)
-            qtile.groups_map[str(int(name) + 4)].toscreen()
-            qtile.focus_screen(0)
-            qtile.groups_map[name].toscreen()
-            qtile.focus_screen(i)
-
-    return _inner
-
-
-for i in "1234":
-    keys.append(Key([mod], i, lazy.function(go_to_group(i))))
-
-for i in "12345678":
-    keys.extend([
-        Key(
-            [mod, "shift"],
-            i,
-            lazy.window.togroup(i, switch_group=True),
-            desc=f"Switch to & move focused window to group {i}",
-        )
-    ])
+# for i in "12345678":
+#     keys.extend([
+#         Key(
+#             [mod, "shift"],
+#             i,
+#             lazy.window.togroup(i, switch_group=True),
+#             desc=f"Switch to & move focused window to group {i}",
+#         )
+#     ])
 
 layouts = [
     layout.Columns(
@@ -202,7 +228,7 @@ extension_defaults = widget_defaults.copy()
 
 screens = [
     Screen(
-        wallpaper="~/dotfiles/wallpaper.jpg",
+        wallpaper="~/dotfiles/wallpaper3.png",
         wallpaper_mode = "fill",
         bottom=bar.Bar(
             [
@@ -222,7 +248,7 @@ screens = [
                 widget.Battery(),
                 # NB Systray is incompatible with Wayland, consider using StatusNotifier instead
                 widget.Systray(),
-                widget.Clock(format="%Y-%m-%d %a %I:%M %p"),
+                widget.Clock(format="%Y-%m-%d %a %H:%M"),
                 widget.QuickExit(),
             ],
             24,

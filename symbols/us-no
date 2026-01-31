@@ -1,0 +1,14 @@
+xkb_symbols "us-no"
+{
+    include "us(basic)"            // Includes the base US keys
+    include "level3(ralt_switch)"  // Configures Right Alt as the Level 3 switch
+
+    // Map Å to the 'A' key
+    key <AC01> { [ a, A, aring, Aring ] };
+
+    // Map Ø to the 'O' key
+    key <AD09> { [ o, O, oslash, Ooblique ] };
+
+    // Map Æ to the 'E' key (phonetically closest single key)
+    key <AD03> { [ e, E, ae, AE ] };
+};

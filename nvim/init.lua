@@ -16,6 +16,7 @@ Plug("neovim/nvim-lspconfig")
 Plug('hrsh7th/nvim-cmp')
 Plug('hrsh7th/cmp-nvim-lsp')
 Plug('L3MON4D3/LuaSnip')
+Plug('akinsho/bufferline.nvim', { ["tag"] = "*" })
 Plug("saadparwaiz1/cmp_luasnip")
 Plug("nvim-lua/plenary.nvim")
 Plug("nvim-telescope/telescope.nvim")
@@ -23,6 +24,8 @@ Plug("ibhagwan/fzf-lua", { ["branch"] = "main" })
 Plug("folke/which-key.nvim")
 Plug("numToStr/Comment.nvim")
 Plug("lewis6991/gitsigns.nvim")
+Plug("tpope/vim-sleuth")
+Plug("rmagatti/auto-session")
 
 vim.call("plug#end")
 
@@ -39,6 +42,9 @@ require "lsp_config"
 require "treesitter_config"
 require "cmp_config"
 require "telescope_config"
+
+require("bufferline").setup({ options = {  show_close_icon = false, show_buffer_close_icons = false } })
+require("auto-session").setup({})
 
 -- highlight when yanking
 vim.api.nvim_create_autocmd('TextYankPost', {

@@ -1,8 +1,7 @@
 #!/bin/sh
-setxkbmap -option ctrl:nocaps
 nm-applet &
 blueman-applet &
 flameshot &
 fcitx5 &
 setxkbmap -option
-setxkbmap -option caps:numlock
+setxkbmap us-no -option caps:numlock,lv3:ralt_switch

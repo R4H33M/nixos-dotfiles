@@ -23,7 +23,9 @@ local function my_on_attach(bufnr)
 	vim.keymap.set("n", "d", api.fs.remove, opts("Delete File"))
 	vim.keymap.set("n", "r", api.fs.rename, opts("Rename File"))
 	vim.keymap.set("n", "<cr>", 
-		api.node.open.edit, opts("Open in Place"))
+		api.node.open.no_window_picker, opts("Open in Place"))
+	vim.keymap.set("n", "<C-t>", 
+		api.node.open.vertical, opts("Open in Vertical Split"))
 end
 
 -- empty setup using defaults

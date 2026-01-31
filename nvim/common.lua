@@ -60,3 +60,6 @@ vim.opt.smarttab = true
 -- use unix line endings
 vim.opt.fileformat = "unix"
 
+-- sessionsaving
+vim.opt.sessionoptions = "blank,buffers,curdir,folds,help,tabpages,winsize,winpos,terminal,localoptions"
+

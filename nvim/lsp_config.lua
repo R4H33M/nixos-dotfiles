@@ -1,4 +1,3 @@
-local nvim_lsp = require("lspconfig")
 local map = vim.api.nvim_set_keymap
 
 -- Mappings
@@ -27,17 +26,13 @@ local servers = {
 --	"lua_ls",
 	"pyright",
 --	"rust_analyzer",
-   "clangd",
+	"clangd",
 --	"ts_ls",
 --	"svlangserver"
 }
 
-local capabilities = require("cmp_nvim_lsp").default_capabilities()
-
 for _, lsp in ipairs(servers) do
-	nvim_lsp[lsp].setup({
-		capabilities = capabilities,
-	})
+	vim.lsp.enable(lsp)
 end
 
 --[[

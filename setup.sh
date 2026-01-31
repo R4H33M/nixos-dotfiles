@@ -24,6 +24,7 @@ symlink qtile ~/.config/qtile
 symlink flameshot ~/.config/flameshot
 symlink kitty ~/.config/kitty
 symlink starship.toml ~/.config/starship.toml
+symlink rofimoji.rc ~/.config/rofimoji.rc
 
 echo "Need sudo to link configuration.nix"
 sudo ln -vsf "$(pwd)/configuration.nix" /etc/nixos/configuration.nix
