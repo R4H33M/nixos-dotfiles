@@ -114,7 +114,7 @@ in
 
   boot.blacklistedKernelModules = [ "nouveau" "nvidia" "nvidia_drm" "nvidia_modeset" ];
 
-  boot.kernelPackages = pkgs.linuxPackages_latest;
+  boot.kernelPackages = pkgs.linuxPackages_6_18;
 
   # Prevent trackpad from moving while typing
   services.libinput.touchpad.disableWhileTyping = true;
@@ -127,7 +127,12 @@ in
   # networking.proxy.noProxy = "127.0.0.1,localhost,internal.domain";
 
   # Enable networking
-  networking.networkmanager.enable = true;
+  networking.networkmanager = {
+    enable = true;
+    plugins = with pkgs; [
+      networkmanager-openvpn
+    ];
+  };
   networking.useNetworkd = true;
   networking.dhcpcd.enable = false;
 
@@ -245,6 +250,10 @@ in
     };
   };
 
+  
+  # virtualisation.virtualbox.host.enable = true;
+  # users.extraGroups.vboxusers.members = [ "xygzy" ];
+
   services.printing.enable = true;
 
   programs.neovim = {
@@ -289,8 +298,11 @@ in
       xdotool # for norwregian key shortcuts
 
       # Core Tools
+      zip
       unzip
+      p7zip
       file
+      mate.eom
 
       # Communication
       signal-desktop
@@ -307,6 +319,8 @@ in
       })
       uv
       opam # for COS 320 compilers
+      gnumake
+      gcc
 
       # Language learning
       anki-bin
@@ -314,6 +328,7 @@ in
 
       # Hacking
       qFlipper
+      gdb
       burpsuite
       nmap
       ghidra-bin
@@ -329,6 +344,7 @@ in
       jadx
       apksigner
       sage
+      android-studio
 
       # Misc
       texliveFull
@@ -363,6 +379,7 @@ in
     interactiveShellInit = lib.mkOrder 2000
     ''
       eval "$(${lib.getExe pkgs.zoxide} init bash --cmd cd)"    
+      eval $(opam env)
     '';
   };
 

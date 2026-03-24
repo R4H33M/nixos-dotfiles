@@ -25,6 +25,7 @@ vim.api.nvim_create_autocmd("BufWritePre", {
 local servers = {
 --	"lua_ls",
 	"pyright",
+	"ocamllsp",
 --	"rust_analyzer",
 	"clangd",
 --	"ts_ls",
