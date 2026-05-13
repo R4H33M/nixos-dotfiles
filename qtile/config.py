@@ -29,6 +29,7 @@ from libqtile.config import Click, Drag, Group, Key, Match, Screen
 from libqtile.lazy import lazy
 from libqtile.utils import guess_terminal
 from libqtile.widget import backlight
+from libqtile.log_utils import logger
 import os
 import subprocess
 from libqtile import hook
@@ -44,14 +45,38 @@ mod = "mod4"
 
 terminal = "kitty"
 
+def focus_and_warp(direction):
+    """Creates a custom keybind action that focuses, then warps."""
+    @lazy.function
+    def _inner(qtile):
+
+        if direction == "left":
+            qtile.current_layout.left()
+        elif direction == "right":
+            qtile.current_layout.right()
+        elif direction == "down":
+            qtile.current_layout.down()
+        elif direction == "up":
+            qtile.current_layout.up()
+            
+        # 2. Fire our safe warp function
+        # warp_cursor_safely(qtile)
+        win = qtile.current_window
+        center_x = (win.width // 2)
+        center_y = (win.height // 2)
+        
+        win.window.warp_pointer(center_x, center_y)
+        
+    return _inner
+
 keys = [
     # A list of available commands that can be bound to keys can be found
     # at https://docs.qtile.org/en/latest/manual/config/lazy.html
     # Switch between windows
-    Key([mod], "h", lazy.layout.left(), desc="Move focus to left"),
-    Key([mod], "l", lazy.layout.right(), desc="Move focus to right"),
-    Key([mod], "j", lazy.layout.down(), desc="Move focus down"),
-    Key([mod], "k", lazy.layout.up(), desc="Move focus up"),
+    Key([mod], "h", focus_and_warp("left"), desc="Focus left and warp"),
+    Key([mod], "l", focus_and_warp("right"), desc="Focus right and warp"),
+    Key([mod], "j", focus_and_warp("down"), desc="Focus down and warp"),
+    Key([mod], "k", focus_and_warp("up"), desc="Focus up and warp"),
     # Key([mod], "space", lazy.layout.next(), desc="Move window focus to other window"),
     # Move windows between left/right columns or move up/down in current stack.
     # Moving out of range in Columns layout will create new column.
@@ -101,15 +126,15 @@ keys = [
         desc="Toggle fullscreen on the focused window",
     ),
     Key([mod], "m", lazy.spawn("rofimoji"), desc="Emoji Picker"),
-    # Key(
-    #     [mod],
-    #     "t",
-    #     lazy.window.toggle_floating(),
-    #     desc="Toggle floating on the focused window",
-    # ),
+    Key(
+        [mod],
+        "p",
+        lazy.window.toggle_floating(),
+        desc="Toggle floating on the focused window",
+    ),
     Key([mod, "control"], "r", lazy.reload_config(), desc="Reload the config"),
     # Key([mod, "control"], "q", lazy.shutdown(), desc="Shutdown Qtile"),
-    Key([mod], "r", lazy.spawn("rofi -show drun"), desc="Spawn a command using a prompt widget"),
+    Key([mod], "r", lazy.spawn("rofi -show drun -terminal kitty"), desc="Spawn a command using a prompt widget"),
     Key(
         [],
         "XF86MonBrightnessUp",
@@ -263,25 +288,39 @@ screens = [
 ]
 
 # Drag floating layouts.
-mouse = [
-    Drag(
-        [mod],
-        "Button1",
-        lazy.window.set_position_floating(),
-        start=lazy.window.get_position(),
-    ),
-    Drag(
-        [mod], "Button3", lazy.window.set_size_floating(), start=lazy.window.get_size()
-    ),
-    Click([mod], "Button2", lazy.window.bring_to_front()),
-]
+# mouse = [
+#     Drag(
+#         [mod],
+#         "Button1",
+#         lazy.window.set_position_floating(),
+#         start=lazy.window.get_position(),
+#     ),
+#     Drag(
+#         [mod], "Button3", lazy.window.set_size_floating(), start=lazy.window.get_size()
+#     ),
+#     Click([mod], "Button2", lazy.window.bring_to_front()),
+# ]
 
 dgroups_key_binder = None
 dgroups_app_rules = []  # type: list
 follow_mouse_focus = False
 bring_front_click = False
 floats_kept_above = True
-cursor_warp = True
+
+cursor_warp = False
+
+# meikipop_match = Match(title="meikipop")
+#
+# @hook.subscribe.client_focus
+# def warp_to_specific(window):
+#     # 3. Check if focused window matches criteria
+#     if not meikipop_match.compare(window):
+#         center_x = window.x + (window.width // 2)
+#         center_y = window.y + (window.height // 2)
+        
+        # 3. Safely move the mouse without triggering another focus event
+        # window.qtile.core.warp_pointer(center_x, center_y)
+
 floating_layout = layout.Floating(
     float_rules=[
         # Run the utility of `xprop` to see the wm class and name of an X client.

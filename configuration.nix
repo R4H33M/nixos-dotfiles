@@ -12,6 +12,14 @@ let
   
   # This is manually copied into my home directory for the plugin
   cshargextcap = pkgs.callPackage ./cshargextcap.nix { };
+  
+  manga_ocr = pkgs.makeDesktopItem {
+    name = "manga_ocr";
+    desktopName = "manga_ocr";
+    exec = "${lib.getExe pkgs.python313Packages.manga-ocr}";
+    terminal = true;
+  };
+
 in
 {
   imports =
@@ -63,6 +71,12 @@ in
     "nvidia.NVreg_RegistryDwords=EnableBrightnessControl=0"
     "nvme_core.default_ps_max_latency_us=0"
   ];
+
+  fileSystems."/home/xygzy/Media" = {
+     device = "/dev/disk/by-uuid/1df9e10f-e2e2-455b-a6ed-0798ad1dcaec";
+     fsType = "ext4";
+     options = [ "nofail" ]; 
+   };
   
   # G16 specific
   boot.initrd.prepend = [ "${import ./gu605c-spi-cs-gpio { inherit pkgs; }}/asus-gu605c-acpi.cpio" ];
@@ -182,17 +196,17 @@ in
 
   services.journald.extraConfig = "SystemMaxUse=1G";
   services.dbus.implementation = "broker";
-
+ 
   # Configure keymap in X11
   services.xserver.xkb = {
     layout = "us";
     variant = "";
     options = "caps:numlock,lv3:ralt_switch"; #somethings weird with this that is persisting
-    extraLayouts.us-no= {
+    extraLayouts.usno= {
       description = "US layout with Custom Norwegian Shortcuts";
       languages = [ "eng" ];
-      symbolsFile = pkgs.writeText "us-no" ''
-        xkb_symbols "us-no" {
+      symbolsFile = pkgs.writeText "usno" ''
+        default partial alphanumeric_keys xkb_symbols "basic" {
           include "us(basic)"
 
           name[Group1]= "US layout with Custom Norwegian Shortcuts";
@@ -212,7 +226,6 @@ in
           // Map AltGr+E to æ / Æ
           key <AD03> { [	   e,          E,        ae,           AE] };
           
-          include "level3(ralt_switch)"
         };
       '';
     };
@@ -323,8 +336,15 @@ in
       gcc
 
       # Language learning
-      anki-bin
+      anki
       mpv
+      python313Packages.manga-ocr
+      tagainijisho
+      (pkgs.callPackage ./meikipop/meikipop.nix { })
+      manga_ocr
+
+      # Gaming
+      steam-run # also needed for meikipop
 
       # Hacking
       qFlipper
@@ -345,16 +365,22 @@ in
       apksigner
       sage
       android-studio
+      arduino
 
       # Misc
       texliveFull
       htop
       rubyPackages.github-pages
+      libreoffice
     ];
   };
 
   programs.starship.enable = true;
 
+  # Gaming stuff
+  programs.steam = {
+    enable = true;
+  };
 
   programs.wireshark.enable = true; 
   programs.wireshark.package = pkgs.wireshark;
@@ -363,6 +389,9 @@ in
   services.gvfs.enable = true;
   services.udisks2.enable = true;
   hardware.flipperzero.enable = true; # since we are doing a user install?
+
+  # iOS security stuff
+  # services.usbmuxd.enable = true;
 
   programs.zoxide.enable = true;
 
