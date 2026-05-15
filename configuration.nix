@@ -12,14 +12,21 @@ let
   
   # This is manually copied into my home directory for the plugin
   cshargextcap = pkgs.callPackage ./cshargextcap.nix { };
-  
-  manga_ocr = pkgs.makeDesktopItem {
-    name = "manga_ocr";
-    desktopName = "manga_ocr";
-    exec = "${lib.getExe pkgs.python313Packages.manga-ocr}";
-    terminal = true;
+
+  manga_ocr_desktop = pkgs.makeDesktopItem {
+      name = "manga_ocr";
+      desktopName = "manga_ocr";
+      exec = "manga_ocr";
+      terminal = true;
   };
 
+  manga_ocr_script = pkgs.writeShellScriptBin "manga_ocr" ''
+      export LD_LIBRARY_PATH=/run/opengl-driver/lib:$LD_LIBRARY_PATH
+      export OCL_ICD_VENDORS=/run/opengl-driver/etc/OpenCL/vendors/
+      cd /home/xygzy/Applications/manga-ocr
+      ${lib.getExe pkgs.uv} run manga_ocr "$@"
+  '';
+  
 in
 {
   imports =
@@ -66,10 +73,12 @@ in
 
   # G16 specific
   boot.kernelParams = [
-    "i915.enable_dpcd_backlight=1" 
+    "xe.enable_dpcd_backlight=1" 
     "nvidia.NVreg_EnableBacklightHandler=0"
     "nvidia.NVreg_RegistryDwords=EnableBrightnessControl=0"
     "nvme_core.default_ps_max_latency_us=0"
+    "i915.force_probe=!*"
+    "xe.force_probe=*"
   ];
 
   fileSystems."/home/xygzy/Media" = {
@@ -96,10 +105,11 @@ in
       intel-media-driver     # VA-API (iHD) userspace
       vpl-gpu-rt             # oneVPL (QSV) runtime
 
-      # Optional (compute / tooling):
-      intel-compute-runtime  # OpenCL (NEO) + Level Zero for Arc/Xe
-      # NOTE: 'intel-ocl' also exists as a legacy package; not recommended for Arc/Xe.
-      # libvdpau-va-gl       # Only if you must run VDPAU-only apps
+      # Compute / tooling:
+      intel-compute-runtime 
+      intel-compute-runtime.drivers 
+      level-zero
+      ocl-icd
     ];
   };
 
@@ -127,6 +137,8 @@ in
   # Udev rule for Faultier
   SUBSYSTEM=="usb", ATTR{idVendor}=="37de", ATTR{idProduct}=="fffd", MODE="0666"
   '';
+  
+  boot.initrd.kernelModules = [ "xe" ];
 
   boot.blacklistedKernelModules = [ "nouveau" "nvidia" "nvidia_drm" "nvidia_modeset" ];
 
@@ -291,7 +303,7 @@ in
   users.users.xygzy = {
     isNormalUser = true;
     description = "xygzy";
-    extraGroups = [ "networkmanager" "wheel" "dialout" "wireshark"];
+    extraGroups = [ "networkmanager" "wheel" "dialout" "wireshark" "render" ];
     packages = with pkgs; [
 
       # Core
@@ -340,10 +352,10 @@ in
       # Language learning
       anki
       mpv
-      python313Packages.manga-ocr
       tagainijisho
       (pkgs.callPackage ./meikipop/meikipop.nix { })
-      manga_ocr
+      manga_ocr_desktop
+      manga_ocr_script
 
       # Gaming
       steam-run # also needed for meikipop
