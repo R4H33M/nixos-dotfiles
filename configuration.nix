@@ -32,6 +32,26 @@ in
   imports =
     [ # Include the results of the hardware scan.
       ./hardware-configuration.nix # Use absolute path so you use automatically generated version
+
+      # --- iGPU ONLY (Base Configuration) ---
+      # These settings are hidden from specialisations
+      ({ lib, config, ... }: {
+        config = lib.mkIf (config.specialisation != {}) {
+          boot.blacklistedKernelModules = [ "nouveau" "nvidia" "nvidia_drm" "nvidia_modeset" ];
+
+          # Destructive udev rules to cut battery drain
+          services.udev.extraRules = ''
+            # Remove NVIDIA USB xHCI Host Controller devices
+            ACTION=="add", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x0c0330", ATTR{power/control}="auto", ATTR{remove}="1"
+            # Remove NVIDIA USB Type-C UCSI devices
+            ACTION=="add", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x0c8000", ATTR{power/control}="auto", ATTR{remove}="1"
+            # Remove NVIDIA Audio devices
+            ACTION=="add", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x040300", ATTR{power/control}="auto", ATTR{remove}="1"
+            # Remove NVIDIA VGA/3D controller devices
+            ACTION=="add", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x03[0-9]*", ATTR{power/control}="auto", ATTR{remove}="1"
+          '';
+        };
+      })
     ];
   
   # Needed for python dynamic libraries
@@ -91,10 +111,10 @@ in
   boot.initrd.prepend = [ "${import ./gu605c-spi-cs-gpio { inherit pkgs; }}/asus-gu605c-acpi.cpio" ];
 
   # G16 specific - ensure no discrete GPU stuff
-  boot.extraModprobeConfig = ''
-    blacklist nouveau
-    options nouveau modeset=0
-  '';
+  # boot.extraModprobeConfig = ''
+  #   blacklist nouveau
+  #   options nouveau modeset=0
+  # '';
 
   services.xserver.videoDrivers = [ "modesetting" ];
 
@@ -124,14 +144,6 @@ in
   services.supergfxd.enable = false;
   
   services.udev.extraRules = ''
-  # Remove NVIDIA USB xHCI Host Controller devices, if present
-  ACTION=="add", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x0c0330", ATTR{power/control}="auto", ATTR{remove}="1"
-  # Remove NVIDIA USB Type-C UCSI devices, if present
-  ACTION=="add", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x0c8000", ATTR{power/control}="auto", ATTR{remove}="1"
-  # Remove NVIDIA Audio devices, if present
-  ACTION=="add", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x040300", ATTR{power/control}="auto", ATTR{remove}="1"
-  # Remove NVIDIA VGA/3D controller devices
-  ACTION=="add", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x03[0-9]*", ATTR{power/control}="auto", ATTR{remove}="1"
   # Allow brightness to be changed without root
   ACTION=="add", SUBSYSTEM=="backlight", KERNEL=="intel_backlight", MODE="0666", RUN+="${pkgs.coreutils}/bin/chmod a+rw /sys/class/backlight/%k/brightness"
   # Udev rule for Faultier
@@ -140,7 +152,7 @@ in
   
   boot.initrd.kernelModules = [ "xe" ];
 
-  boot.blacklistedKernelModules = [ "nouveau" "nvidia" "nvidia_drm" "nvidia_modeset" ];
+  # boot.blacklistedKernelModules = [ "nouveau" "nvidia" "nvidia_drm" "nvidia_modeset" ];
 
   boot.kernelPackages = pkgs.linuxPackages_7_0;
 
@@ -484,4 +496,31 @@ in
   # (e.g. man configuration.nix or on https://nixos.org/nixos/options.html).
   system.stateVersion = "25.05"; # Did you read the comment?
 
+
+  specialisation = {
+    dgpu.configuration = {
+      system.nixos.tags = [ "dgpu" ];
+
+      services.xserver.videoDrivers = lib.mkForce [ "nvidia" ];
+
+      hardware.nvidia = {
+        modesetting.enable = true;
+
+        powerManagement.enable = true;
+        powerManagement.finegrained = true;
+        open = true;
+        nvidiaSettings = true;
+
+        package = config.boot.kernelPackages.nvidiaPackages.stable;
+
+        prime = {
+          offload.enable = true;
+          offload.enableOffloadCmd = true;
+          sync.enable = false;
+          intelBusId = "PCI:0:2:0";
+          nvidiaBusId = "PCI:1:0:0";
+        };
+      };
+    };
+  };
 }
