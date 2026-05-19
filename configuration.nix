@@ -81,7 +81,7 @@ in
     "xe.force_probe=*"
   ];
 
-  fileSystems."/home/xygzy/Media" = {
+  fileSystems."/media" = {
      device = "/dev/disk/by-uuid/1df9e10f-e2e2-455b-a6ed-0798ad1dcaec";
      fsType = "ext4";
      options = [ "nofail" ]; 
@@ -142,7 +142,7 @@ in
 
   boot.blacklistedKernelModules = [ "nouveau" "nvidia" "nvidia_drm" "nvidia_modeset" ];
 
-  boot.kernelPackages = pkgs.linuxPackages_6_18;
+  boot.kernelPackages = pkgs.linuxPackages_7_0;
 
   # Prevent trackpad from moving while typing
   services.libinput.touchpad.disableWhileTyping = true;
@@ -356,6 +356,7 @@ in
       (pkgs.callPackage ./meikipop/meikipop.nix { })
       manga_ocr_desktop
       manga_ocr_script
+      qbittorrent
 
       # Gaming
       steam-run # also needed for meikipop
@@ -426,7 +427,19 @@ in
     '';
   };
 
-  services.tailscale.enable = true;
+  # services.tailscale.enable = true;  
+  services.mullvad-vpn.enable = true;
+  services.mullvad-vpn.package = pkgs.mullvad-vpn;
+
+  # mullvad gets stuck waiting for this one
+  systemd.network.wait-online.enable = false;
+  
+  # apparently also needed for mullvad?
+  services.resolved = {
+    enable = true;
+  };
+
+  services.sonarr.enable = true;
   
   # for betterlockscreen 
   programs.i3lock.enable = true;
