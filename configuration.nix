@@ -140,8 +140,7 @@ in
 
   # G16 specific
   services.asusd.enable = true;
-  services.asusd.enableUserService = true;
-  services.supergfxd.enable = false;
+  # services.supergfxd.enable = false; # doesn't work any more
   
   services.udev.extraRules = ''
   # Allow brightness to be changed without root
@@ -186,7 +185,9 @@ in
   nix.settings.trusted-users = [ "root" "xygzy" ];
 
   # Set your time zone.
-  time.timeZone = lib.mkDefault "America/New_York";
+  # "America/New_York
+  # "Asia/Tokyo"
+  time.timeZone = "Europe/Oslo";
 
   # Select internationalisation properties.
   i18n.defaultLocale = "en_US.UTF-8";
@@ -288,7 +289,8 @@ in
       };
     };
   };
-
+  
+  virtualisation.podman.enable = true;
   
   # virtualisation.virtualbox.host.enable = true;
   # users.extraGroups.vboxusers.members = [ "xygzy" ];
@@ -328,9 +330,9 @@ in
       obsidian
       rofi
       rofimoji
-      mate.caja
+      caja
       xclip # for neovim clipboard support
-      xorg.xauth
+      xauth
       betterlockscreen
       starship
       wget
@@ -341,7 +343,9 @@ in
       unzip
       p7zip
       file
-      mate.eom
+      eom
+      engrampa
+      ente-desktop
 
       # Communication
       signal-desktop
@@ -422,9 +426,6 @@ in
 
   programs.zoxide.enable = true;
 
-  # didn't quite work for some reason
-  # services.automatic-timezoned.enable = true;
-
   # Doesn't do anything anymore because of the initExtra
   # programs.zoxide.flags = [
   #   "--cmd cd"
@@ -502,6 +503,8 @@ in
       system.nixos.tags = [ "dgpu" ];
 
       services.xserver.videoDrivers = lib.mkForce [ "nvidia" ];
+
+      hardware.nvidia-container-toolkit.enable = true;
 
       hardware.nvidia = {
         modesetting.enable = true;
